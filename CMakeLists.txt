@@ -17,6 +17,7 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_MODULE_PATH}/gcc_stm32.cmake)
 include(${CMAKE_TOOLCHAIN_FILE})
 
 FIND_PACKAGE(Git REQUIRED)
+
 set(CUBE_SOURCE "${CMAKE_BINARY_DIR}/STM32F4-Cube-Firmware")
 if(EXISTS ${CUBE_SOURCE})
     message("Cube FW directory exists")
@@ -28,15 +29,30 @@ endif()
 
 set(STM32Cube_DIR ${CUBE_SOURCE})
 
+set(UTENSOR_DIRECTORY "uTensor")
+set(UTENSOR_SOURCE "${CMAKE_BINARY_DIR}/${UTENSOR_DIRECTORY}")
+if(EXISTS ${UTENSOR_SOURCE})
+    message("uTensor source  directory exists")
+else()
+    message("Getting uTensor Firmware")
+    set(GIT_REPOSITORY "https://github.com/alxhoff/uTensor.git")
+    execute_process(COMMAND ${GIT_EXECUTABLE} clone ${GIT_REPOSITORY} ${UTENSOR_DIRECTORY})
+endif()
+
+set(uTensor_DIR ${UTENSOR_SOURCE})
+ADD_SUBDIRECTORY(${UTENSOR_SOURCE})
+MESSAGE("UTENSOR DIR: ${UTENSOR_SOURCE}")
+
+set(STM32Cube_DIR ${CUBE_SOURCE})
 SET(FREERTOS_HEAP_IMPL 1)
 FIND_PACKAGE(FreeRTOS REQUIRED)
-# SET(CMAKE_C_FLAGS "-mcpu=cortex-m4 -march=armv7e-m -mtune=cortex-m4 -mlittle-endian -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=softfp -std=c99 -Wall -Wunused-value -O3 -ffast-math -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-common --param max-inline-insns-single=1000 -DUSE_STDPERIPH_DRIVER -DGFX_USE_OS_FREERTOS=TRUE -DSTM32F429_439xx=TRUE -g3")
 SET(CMAKE_C_FLAGS "-mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -Wall -mfpu=fpv4-sp-d16 -Wl,-Map=output.map -Wl,--gc-sections -g3")
 
 FIND_PACKAGE(CMSIS REQUIRED)
 FIND_PACKAGE(STM32HAL REQUIRED)
 FIND_PACKAGE(STM32LL COMPONENTS fsmc REQUIRED)
 FIND_PACKAGE(STM32BSP COMPONENTS sram ts io lcd ili9325 stmpe811 REQUIRED)
+# FIND_PACKAGE(uTensor)
 
 INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -75,6 +91,8 @@ ADD_EXECUTABLE(
     ${FreeRTOS_SOURCES}
     # startup_stm32f407xx.s
     )
+
+TARGET_LINK_LIBRARIES(${CMAKE_PROJECT_NAME}.elf utensor)
 
 ADD_CUSTOM_TARGET(
     flash
