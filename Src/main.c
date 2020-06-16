@@ -24,21 +24,10 @@ osThreadId defaultTaskHandle;
 osThreadId UARTTaskHandle;
 osThreadId blinkTaskHandle;
 
-/** FATFS SDFatFs; */
-/** FIL MyFile;  */
-/** char SDPath[4];  */
-/** static uint8_t buffer[_MAX_SS];  */
 UART_HandleTypeDef UartHandle;
 
-/**
-  * @brief  Retargets the C library printf function to the USART.
-  * @param  None
-  * @retval None
-  */
 PUTCHAR_PROTOTYPE
 {
-	/* Place your implementation of fputc here */
-	/* e.g. write a character to the EVAL_COM1 and Loop until the end of transmission */
 	HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
 
 	return ch;
@@ -55,21 +44,15 @@ void UARTTask(void const *argument)
 	}
 }
 
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used 
-  * @retval None
-  */
 void StartDefaultTask(void const *argument)
 {
-	/* USER CODE BEGIN 5 */
 	circle_t *tmp_circle;
 	int count = 0;
 	uint16_t screen_height = BSP_LCD_GetYSize();
 	uint16_t screen_width = BSP_LCD_GetXSize();
 	uint16_t x_pos, y_pos;
 	setup();
-	/* Infinite loop */
+
 	for (;;) {
 		tmp_circle = loop();
 		if (tmp_circle) {
@@ -85,14 +68,8 @@ void StartDefaultTask(void const *argument)
 		else
 			HAL_Delay(100);
 	}
-	/* USER CODE END 5 */
 }
 
-/**
-* @brief Function implementing the blinkTaskHandle thread.
-* @param argument: Not used
-* @retval None
-*/
 void blink(void const *argument)
 {
 	int count = 0;
@@ -150,17 +127,10 @@ int main(void)
 {
 	char *hello_str = "Hello World";
 
-	/* MCU Configuration--------------------------------------------------------*/
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
 
-	/* Initialize the LCD */
 	BSP_LCD_Init();
-
-	/* Enable the LCD */
 	BSP_LCD_DisplayOn();
-
-	/* Clear the LCD Background layer */
 	BSP_LCD_Clear(LCD_COLOR_WHITE);
 
 	/** Touchscreen_Calibration(); */
@@ -172,20 +142,6 @@ int main(void)
 	BSP_LCD_DisplayStringAt(210, (BSP_LCD_GetYSize() - 55),
 				(uint8_t *)hello_str, LEFT_MODE);
 
-	/*Link the SD Card disk I/O driver ###################################*/
-	/** if (FATFS_LinkDriver(&SD_Driver, SDPath) != 0) { */
-	/**     Error_Handler(); */
-	/** } */
-
-	/* Create a FAT file system (format) on the logical drive */
-	/** f_mkfs((TCHAR const *)SDPath, FM_ANY, 0, buffer, sizeof(buffer)); */
-
-	/*##-4- Register the file system object to the FatFs module ################*/
-	/** if (f_mount(&SDFatFs, (TCHAR const *)SDPath, 0) != FR_OK) { */
-	/**     Error_Handler(); */
-	/** } */
-
-	/* Configure the system clock */
 	SystemClock_Config();
 
 	UartHandle.Instance = USARTx;
@@ -202,7 +158,6 @@ int main(void)
 		Error_Handler();
 	}
 
-	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
 
 	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
@@ -214,17 +169,12 @@ int main(void)
 	osThreadDef(blinkTaskHandle, blink, osPriorityNormal, 0, 256);
 	blinkTaskHandle = osThreadCreate(osThread(blinkTaskHandle), NULL);
 
-	/* Start scheduler */
 	osKernelStart();
 
 	while (1) {
 	}
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
 void SystemClock_Config(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
@@ -264,11 +214,6 @@ void SystemClock_Config(void)
 	}
 }
 
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_GPIO_Init(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
@@ -359,10 +304,6 @@ static void MX_GPIO_Init(void)
 	HAL_GPIO_Init(SW1_GPIO_Port, &GPIO_InitStruct);
 }
 
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
 void Error_Handler(void)
 {
 	while (1) {
@@ -370,18 +311,7 @@ void Error_Handler(void)
 }
 
 #ifdef USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-	/* USER CODE BEGIN 6 */
-	/* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

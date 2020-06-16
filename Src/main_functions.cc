@@ -12,80 +12,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/schema/schema_generated.h"
-#include "tensorflow/lite/version.h"
+#include <stdlib.h>
+
+#include "tensorflow/lite/c/common.h"
+#include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 
 #include "main_functions.h"
-
 #include "data_types.h"
-
 #include "constants.h"
-#include "sine_model_data.h"
-// Globals, used for compatibility with Arduino-style sketches.
-namespace
-{
-tflite::ErrorReporter *error_reporter = nullptr;
-const tflite::Model *model = nullptr;
-tflite::MicroInterpreter *interpreter = nullptr;
-TfLiteTensor *input = nullptr;
-TfLiteTensor *output = nullptr;
-int inference_count = 0;
 
-// Create an area of memory to use for input, output, and intermediate arrays.
-// Finding the minimum value for your model may require some trial and error.
-constexpr int kTensorArenaSize = 2 * 1024;
-uint8_t tensor_arena[kTensorArenaSize];
-} // namespace
+extern void sine_init();
+extern void sine_invoke();
+
+extern TfLiteTensor *sine_input(int idx=0);
+extern TfLiteTensor *sine_output(int idx=0);
+
+int inference_count = 0;
 
 // The name of this function is important for Arduino compatibility.
 void setup()
 {
-	// Set up logging. Google style is to avoid globals or statics because of
-	// lifetime uncertainty, but since this has a trivial destructor it's okay.
-	// NOLINTNEXTLINE(runtime-global-variables)
-	static tflite::MicroErrorReporter micro_error_reporter;
-	error_reporter = &micro_error_reporter;
-
-	error_reporter->Report("Hello from the error reporter");
-
-	// Map the model into a usable data structure. This doesn't involve any
-	// copying or parsing, it's a very lightweight operation.
-	model = tflite::GetModel(g_sine_model_data);
-	if (model->version() != TFLITE_SCHEMA_VERSION) {
-		error_reporter->Report(
-			"Model provided is schema version %d not equal "
-			"to supported version %d.",
-			model->version(), TFLITE_SCHEMA_VERSION);
-		return;
-	}
-
-	// This pulls in all the operation implementations we need.
-	// NOLINTNEXTLINE(runtime-global-variables)
-	static tflite::ops::micro::AllOpsResolver resolver;
-
-	// Build an interpreter to run the model with.
-	static tflite::MicroInterpreter static_interpreter(model, resolver,
-							   tensor_arena,
-							   kTensorArenaSize,
-							   error_reporter);
-	interpreter = &static_interpreter;
-
-	// Allocate memory from the tensor_arena for the model's tensors.
-	TfLiteStatus allocate_status = interpreter->AllocateTensors();
-	if (allocate_status != kTfLiteOk) {
-		error_reporter->Report("AllocateTensors() failed");
-		return;
-	}
-
-	// Obtain pointers to the model's input and output tensors.
-	input = interpreter->input(0);
-	output = interpreter->output(0);
-
-	// Keep track of how many inferences we have performed.
-	inference_count = 0;
+    sine_init();
 }
 
 // The name of this function is important for Arduino compatibility.
@@ -104,18 +51,14 @@ circle_t *loop()
 	float x_val = position * kXrange;
 
 	// Place our calculated x value in the model's input tensor
-	input->data.f[0] = x_val;
+    tflite::GetTensorData<float>(sine_input())[0] = x_val;
+
 
 	// Run inference, and report any error
-	TfLiteStatus invoke_status = interpreter->Invoke();
-	if (invoke_status != kTfLiteOk) {
-		error_reporter->Report("Invoke failed on x_val: %f\n",
-				       static_cast<double>(x_val));
-		return NULL;
-	}
+    sine_invoke();
 
 	// Read the predicted y value from the model's output tensor
-	float y_val = output->data.f[0];
+	float y_val = tflite::GetTensorData<float>(sine_output())[0];
 
 	ret->x = x_val;
 	ret->y = y_val;
