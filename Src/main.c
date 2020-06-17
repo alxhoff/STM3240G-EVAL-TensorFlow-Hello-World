@@ -16,7 +16,7 @@
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void StartDefaultTask(void const *argument);
+void inferenceTask(void const *argument);
 void blink(void const *argument);
 void UARTTask(void const *argument);
 
@@ -44,7 +44,7 @@ void UARTTask(void const *argument)
 	}
 }
 
-void StartDefaultTask(void const *argument)
+void inferenceTask(void const *argument)
 {
 	circle_t *tmp_circle;
 	int count = 0;
@@ -160,7 +160,7 @@ int main(void)
 
 	MX_GPIO_Init();
 
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+	osThreadDef(defaultTask, inferenceTask, osPriorityNormal, 0, 256);
 	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
 	osThreadDef(UARTTaskHandle, UARTTask, osPriorityNormal, 0, 256);
