@@ -11,7 +11,7 @@ ADD_DEFINITIONS(-DDEBUG_UART_HANDLE=UartHandle)
 # Remove -rdynamic option from linking that is not supported by arm-none-eabi
 # Also remove "undefined reference to `_sbrk'" error
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-specs=nano.specs -specs=nosys.specs")
-set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_LINK_C_FLAGS})
 SET(CMAKE_C_FLAGS "-mcpu=cortex-m4 -mthumb -mfloat-abi=softfp -Wall -mfpu=fpv4-sp-d16 -Wl,-Map=output.map -Wl,--gc-sections -g3")
 
 set(STM32_CHIP STM32F407IGH6)
@@ -42,9 +42,9 @@ set(STM32Cube_DIR ${CUBE_SOURCE})
 SET(FREERTOS_HEAP_IMPL 1)
 
 FIND_PACKAGE(FreeRTOS REQUIRED)
-SET(STORAGE_DRIVER "SDCARD")
+# SET(STORAGE_DRIVER "SDCARD")
 FIND_PACKAGE(CMSIS REQUIRED)
-FIND_PACKAGE(STM32HAL COMPONENTS uart gpio REQUIRED)
+FIND_PACKAGE(STM32HAL COMPONENTS sram gpio uart REQUIRED)
 FIND_PACKAGE(STM32LL COMPONENTS fsmc sdmmc REQUIRED)
 FIND_PACKAGE(STM32BSP COMPONENTS sd sram ts io lcd ili9325 stmpe811 REQUIRED)
 
@@ -74,9 +74,9 @@ ADD_EXECUTABLE(
     ${STM32BSP_SOURCES}
     ${STM32LL_SOURCES}
     ${FreeRTOS_SOURCES}
+    ${TFLite_SOURCES}
+    ${CMSIS_SOURCES}
     )
-
-TARGET_LINK_LIBRARIES(${CMAKE_PROJECT_NAME}.elf tensorflow-microlite)
 
 TARGET_COMPILE_DEFINITIONS(${CMAKE_PROJECT_NAME}.elf PUBLIC STM_BSP)
 
